@@ -1,32 +1,11 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Grip, X, Edit2, Trash2 } from 'lucide-react';
 
 const TrelloBoard = () => {
-  const [lists, setLists] = useState([
-    { 
-      id: 1, 
-      title: 'To Do', 
-      cards: [
-        { id: '1-1', text: 'Strategic Planning', description: 'Review Q4 goals', priority: 'high', dueDate: '2024-12-31' },
-        { id: '1-2', text: 'Budget Review', description: 'Analyze Q1 spending', priority: 'medium', dueDate: null }
-      ]
-    },
-    { 
-      id: 2, 
-      title: 'In Progress', 
-      cards: [
-        { id: '2-1', text: 'Team Updates', description: 'Collect department reports', priority: 'high', dueDate: '2024-12-25' }
-      ]
-    },
-    { 
-      id: 3, 
-      title: 'Done', 
-      cards: [
-        { id: '3-1', text: 'Meeting Prep', description: 'Prepare agenda items', priority: 'low', dueDate: null }
-      ]
-    }
-  ]);
-
+  const [lists, setLists] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [newListTitle, setNewListTitle] = useState('');
   const [newCardTexts, setNewCardTexts] = useState({});
   const [draggedItem, setDraggedItem] = useState(null);
@@ -34,12 +13,59 @@ const TrelloBoard = () => {
   const [editingCard, setEditingCard] = useState(null);
   const [editingList, setEditingList] = useState(null);
 
-  const listColors = ['bg-blue-100', 'bg-purple-100', 'bg-green-100', 'bg-yellow-100', 'bg-pink-100'];
+  const listColors = [
+    'bg-blue-100',
+    'bg-purple-100',
+    'bg-green-100',
+    'bg-yellow-100',
+    'bg-pink-100'
+  ];
+
   const priorityColors = {
     high: { bg: 'bg-red-100', text: 'text-red-700', label: 'High' },
     medium: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Medium' },
     low: { bg: 'bg-green-100', text: 'text-green-700', label: 'Low' }
   };
+
+  // Load data from API
+  useEffect(() => {
+    const fetchBoard = async () => {
+      try {
+        const response = await fetch('/api/boards');
+        const data = await response.json();
+        if (data && data.lists) {
+          setLists(data.lists);
+        }
+      } catch (error) {
+        console.error('Error fetching board:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBoard();
+  }, []);
+
+  // Save to API whenever lists change
+  useEffect(() => {
+    const saveBoard = async () => {
+      try {
+        await fetch('/api/boards', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ lists }),
+        });
+      } catch (error) {
+        console.error('Error saving board:', error);
+      }
+    };
+
+    if (!loading) {
+      saveBoard();
+    }
+  }, [lists, loading]);
 
   const handleAddList = () => {
     if (newListTitle.trim()) {
@@ -54,18 +80,6 @@ const TrelloBoard = () => {
 
   const handleDeleteList = (listId) => {
     setLists(lists.filter(list => list.id !== listId));
-  };
-
-  const handleDeleteCard = (listId, cardId) => {
-    setLists(lists.map(list => {
-      if (list.id === listId) {
-        return {
-          ...list,
-          cards: list.cards.filter(card => card.id !== cardId)
-        };
-      }
-      return list;
-    }));
   };
 
   const handleAddCard = (listId) => {
@@ -89,6 +103,18 @@ const TrelloBoard = () => {
       }));
       setNewCardTexts({ ...newCardTexts, [listId]: '' });
     }
+  };
+
+  const handleDeleteCard = (listId, cardId) => {
+    setLists(lists.map(list => {
+      if (list.id === listId) {
+        return {
+          ...list,
+          cards: list.cards.filter(card => card.id !== cardId)
+        };
+      }
+      return list;
+    }));
   };
 
   const handleUpdateCard = (listId, cardId, updates) => {
@@ -159,6 +185,14 @@ const TrelloBoard = () => {
   const isDropTarget = (listId, cardIndex) => {
     return draggingOver?.listId === listId && draggingOver?.cardIndex === cardIndex;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-gray-600">Loading board...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 min-h-screen bg-gray-100">
