@@ -1,4 +1,4 @@
 abhyankar1977
 trello-clone
 
-mongodb+srv://abhyankar1977:<db_password>@trello-clone.v4jcp.mongodb.net/?retryWrites=true&w=majority&appName=trello-clone
+MONGODB_URI=mongodb+srv://abhyankar1977:<db_password>@trello-clone.v4jcp.mongodb.net/?retryWrites=true&w=majority&appName=trello-clone
